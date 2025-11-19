@@ -64,7 +64,7 @@
 
 ### Phase 2: 后端开发（完整后端实现）
 
-- [ ] 3. 后端：完整后端 API 实现
+- [x] 3. 后端：完整后端 API 实现
   - **项目基础设施**
     - 创建 server/ 目录结构（controllers/, services/, repositories/, models/, middleware/, utils/, config/）
     - 创建 requirements.txt（FastAPI, SQLAlchemy, aiosqlite, bcrypt, Pillow, slowapi）
