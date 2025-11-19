@@ -1,0 +1,2356 @@
+openapi: 3.0.3
+info:
+  title: AWSomeShop API
+  description: |
+    AWSomeShop 员工福利电商平台 API 文档
+    
+    ## 认证方式
+    系统使用 Session-based 认证。登录成功后，服务器会返回 Session ID，客户端需要在后续请求中携带该 Session ID。
+    
+    ## 统一响应格式
+    所有 API 响应都遵循统一的 JSON 格式：
+    
+    **成功响应：**
+    ```json
+    {
+      "code": 200,
+      "message": "success",
+      "data": { ... }
+    }
+    ```
+    
+    **错误响应：**
+    ```json
+    {
+      "code": 400,
+      "message": "错误描述",
+      "data": null
+    }
+    ```
+    
+    ## 分页格式
+    列表接口支持分页，响应格式：
+    ```json
+    {
+      "code": 200,
+      "message": "success",
+      "data": {
+        "items": [],
+        "total": 100,
+        "page": 1,
+        "page_size": 20,
+        "total_pages": 5
+      }
+    }
+    ```
+  version: 1.0.0
+  contact:
+    name: AWSomeShop Team
+    email: support@awsomeshop.com
+
+servers:
+  - url: http://localhost:8000
+    description: 本地开发环境
+  - url: https://api.awsomeshop.com
+    description: 生产环境
+
+tags:
+  - name: 认证
+    description: 用户认证相关接口
+  - name: 员工端-产品
+    description: 员工端产品浏览相关接口
+  - name: 员工端-购物车
+    description: 员工端购物车管理接口
+  - name: 员工端-订单
+    description: 员工端订单管理接口
+  - name: 员工端-积分
+    description: 员工端积分查询接口
+  - name: 员工端-个人中心
+    description: 员工端个人信息管理接口
+  - name: 管理端-用户管理
+    description: 管理端用户管理接口
+  - name: 管理端-产品管理
+    description: 管理端产品管理接口
+  - name: 管理端-分类管理
+    description: 管理端分类管理接口
+  - name: 管理端-积分管理
+    description: 管理端积分发放接口
+  - name: 管理端-操作日志
+    description: 管理端操作日志查询接口
+
+paths:
+  # ==================== 认证接口 ====================
+  /api/auth/login:
+    post:
+      tags:
+        - 认证
+      summary: 用户登录
+      description: 员工或管理员使用用户名和密码登录系统
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                  description: 用户名
+                  example: "employee001"
+                password:
+                  type: string
+                  format: password
+                  description: 密码（6-8位，包含数字和字母）
+                  example: "test123456"
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          session_id:
+                            type: string
+                            description: Session ID
+                          user:
+                            $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/auth/logout:
+    post:
+      tags:
+        - 认证
+      summary: 用户登出
+      description: 用户退出登录，清除 Session
+      operationId: logout
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/auth/current-user:
+    get:
+      tags:
+        - 认证
+      summary: 获取当前用户信息
+      description: 获取当前登录用户的详细信息
+      operationId: getCurrentUser
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/password/change:
+    post:
+      tags:
+        - 认证
+      summary: 员工修改密码
+      description: 员工修改自己的登录密码
+      operationId: changePassword
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - old_password
+                - new_password
+              properties:
+                old_password:
+                  type: string
+                  format: password
+                  description: 当前密码
+                new_password:
+                  type: string
+                  format: password
+                  description: 新密码（6-8位，包含数字和字母）
+                  minLength: 6
+                  maxLength: 8
+      responses:
+        '200':
+          description: 修改成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== 员工端-产品接口 ====================
+  /api/personal/products:
+    get:
+      tags:
+        - 员工端-产品
+      summary: 获取产品列表
+      description: 获取已上架的产品列表，支持分页、排序和筛选
+      operationId: getProducts
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: 页码（从1开始）
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: page_size
+          in: query
+          description: 每页数量
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sort_by
+          in: query
+          description: 排序字段
+          schema:
+            type: string
+            enum: [points_asc, created_desc]
+            default: created_desc
+        - name: category_ids
+          in: query
+          description: 分类ID列表（逗号分隔）
+          schema:
+            type: string
+            example: "1,2,3"
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/Product'
+                          total:
+                            type: integer
+                          page:
+                            type: integer
+                          page_size:
+                            type: integer
+                          total_pages:
+                            type: integer
+                          user_points:
+                            type: integer
+                            description: 当前用户积分余额
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/products/{id}:
+    get:
+      tags:
+        - 员工端-产品
+      summary: 获取产品详情
+      description: 获取指定产品的详细信息
+      operationId: getProductDetail
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 产品ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProductDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/products/search:
+    get:
+      tags:
+        - 员工端-产品
+      summary: 搜索产品
+      description: 按产品名称模糊搜索
+      operationId: searchProducts
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: keyword
+          in: query
+          required: true
+          description: 搜索关键词
+          schema:
+            type: string
+            minLength: 1
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 搜索成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedProducts'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/personal/categories:
+    get:
+      tags:
+        - 员工端-产品
+      summary: 获取分类树
+      description: 获取完整的产品分类树（一级和二级分类）
+      operationId: getCategories
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CategoryTree'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== 员工端-购物车接口 ====================
+  /api/personal/cart:
+    get:
+      tags:
+        - 员工端-购物车
+      summary: 获取购物车
+      description: 获取当前用户的购物车商品列表
+      operationId: getCart
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          items:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/CartItem'
+                          total_quantity:
+                            type: integer
+                            description: 总商品数量
+                          total_points:
+                            type: integer
+                            description: 总所需积分
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/cart/add:
+    post:
+      tags:
+        - 员工端-购物车
+      summary: 添加到购物车
+      description: 添加产品到购物车，如果已存在则增加数量
+      operationId: addToCart
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - quantity
+              properties:
+                product_id:
+                  type: integer
+                  description: 产品ID
+                quantity:
+                  type: integer
+                  description: 数量
+                  minimum: 1
+      responses:
+        '200':
+          description: 添加成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/cart/update:
+    put:
+      tags:
+        - 员工端-购物车
+      summary: 更新购物车商品数量
+      description: 修改购物车中指定商品的数量
+      operationId: updateCartItem
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - product_id
+                - quantity
+              properties:
+                product_id:
+                  type: integer
+                quantity:
+                  type: integer
+                  minimum: 1
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/cart/remove/{product_id}:
+    delete:
+      tags:
+        - 员工端-购物车
+      summary: 删除购物车商品
+      description: 从购物车中删除指定商品
+      operationId: removeFromCart
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          description: 产品ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/cart/clear:
+    delete:
+      tags:
+        - 员工端-购物车
+      summary: 清空购物车
+      description: 清空当前用户的购物车
+      operationId: clearCart
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 清空成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== 员工端-订单接口 ====================
+  /api/personal/orders/create:
+    post:
+      tags:
+        - 员工端-订单
+      summary: 创建订单
+      description: 从购物车创建订单，扣除积分并清空购物车
+      operationId: createOrder
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - shipping_address
+                - shipping_phone
+              properties:
+                shipping_address:
+                  type: string
+                  description: 收货地址
+                  maxLength: 500
+                shipping_phone:
+                  type: string
+                  description: 联系电话
+                  maxLength: 20
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+
+  /api/personal/orders:
+    get:
+      tags:
+        - 员工端-订单
+      summary: 获取订单列表
+      description: 获取当前用户的订单历史
+      operationId: getOrders
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedOrders'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/orders/{id}:
+    get:
+      tags:
+        - 员工端-订单
+      summary: 获取订单详情
+      description: 获取指定订单的详细信息
+      operationId: getOrderDetail
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 订单ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/OrderDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== 员工端-积分接口 ====================
+  /api/personal/points/balance:
+    get:
+      tags:
+        - 员工端-积分
+      summary: 获取积分余额
+      description: 获取当前用户的积分余额
+      operationId: getPointsBalance
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          balance:
+                            type: integer
+                            description: 积分余额
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/points/transactions:
+    get:
+      tags:
+        - 员工端-积分
+      summary: 获取积分明细
+      description: 获取当前用户的积分交易明细
+      operationId: getPointsTransactions
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedTransactions'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== 员工端-个人中心接口 ====================
+  /api/personal/profile:
+    get:
+      tags:
+        - 员工端-个人中心
+      summary: 获取个人信息
+      description: 获取当前用户的个人信息
+      operationId: getProfile
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/personal/address:
+    get:
+      tags:
+        - 员工端-个人中心
+      summary: 获取收货地址
+      description: 获取当前用户的收货地址信息
+      operationId: getAddress
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Address'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags:
+        - 员工端-个人中心
+      summary: 更新收货地址
+      description: 更新当前用户的收货地址信息
+      operationId: updateAddress
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - address
+                - phone
+              properties:
+                address:
+                  type: string
+                  maxLength: 500
+                phone:
+                  type: string
+                  maxLength: 20
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ==================== 管理端-用户管理接口 ====================
+  /api/manage/users:
+    get:
+      tags:
+        - 管理端-用户管理
+      summary: 获取用户列表
+      description: 获取所有用户列表（仅管理员）
+      operationId: getUsers
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: keyword
+          in: query
+          description: 搜索关键词（用户名、姓名、工号）
+          schema:
+            type: string
+        - name: role
+          in: query
+          description: 角色筛选
+          schema:
+            type: string
+            enum: [employee, admin]
+        - name: is_active
+          in: query
+          description: 状态筛选
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedUsers'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - 管理端-用户管理
+      summary: 创建用户
+      description: 创建新用户账户（仅管理员）
+      operationId: createUser
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          user_id:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/users/{id}:
+    get:
+      tags:
+        - 管理端-用户管理
+      summary: 获取用户详情
+      description: 获取指定用户的详细信息（仅管理员）
+      operationId: getUserDetail
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags:
+        - 管理端-用户管理
+      summary: 更新用户信息
+      description: 更新用户信息（仅管理员）
+      operationId: updateUser
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags:
+        - 管理端-用户管理
+      summary: 删除用户
+      description: 删除用户账户（仅管理员）
+      operationId: deleteUser
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/users/{id}/status:
+    put:
+      tags:
+        - 管理端-用户管理
+      summary: 启用/禁用用户
+      description: 切换用户账户状态（仅管理员）
+      operationId: toggleUserStatus
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - is_active
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/users/{id}/reset-password:
+    post:
+      tags:
+        - 管理端-用户管理
+      summary: 重置密码
+      description: 重置用户密码（仅管理员）
+      operationId: resetPassword
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - new_password
+              properties:
+                new_password:
+                  type: string
+                  format: password
+                  minLength: 6
+                  maxLength: 8
+      responses:
+        '200':
+          description: 重置成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ==================== 管理端-产品管理接口 ====================
+  /api/manage/products:
+    get:
+      tags:
+        - 管理端-产品管理
+      summary: 获取产品列表
+      description: 获取所有产品列表（包括已下架，仅管理员）
+      operationId: getManageProducts
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: keyword
+          in: query
+          description: 搜索关键词（产品名称）
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 状态筛选
+          schema:
+            type: string
+            enum: [active, inactive]
+        - name: category_ids
+          in: query
+          description: 分类ID列表（逗号分隔）
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedProducts'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - 管理端-产品管理
+      summary: 创建产品
+      description: 创建新产品（仅管理员）
+      operationId: createProduct
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          product_id:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/products/{id}:
+    get:
+      tags:
+        - 管理端-产品管理
+      summary: 获取产品详情
+      description: 获取产品详细信息（仅管理员）
+      operationId: getManageProductDetail
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ProductDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags:
+        - 管理端-产品管理
+      summary: 更新产品
+      description: 更新产品信息（仅管理员）
+      operationId: updateProduct
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags:
+        - 管理端-产品管理
+      summary: 删除产品
+      description: 软删除产品（仅管理员）
+      operationId: deleteProduct
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/products/{id}/status:
+    put:
+      tags:
+        - 管理端-产品管理
+      summary: 上架/下架产品
+      description: 切换产品状态（仅管理员）
+      operationId: toggleProductStatus
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum: [active, inactive]
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/products/{id}/images:
+    post:
+      tags:
+        - 管理端-产品管理
+      summary: 上传产品图片
+      description: 上传产品图片（最多3张，仅管理员）
+      operationId: uploadProductImages
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - files
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  maxItems: 3
+      responses:
+        '200':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          images:
+                            type: array
+                            items:
+                              $ref: '#/components/schemas/ProductImage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/products/images/{image_id}:
+    delete:
+      tags:
+        - 管理端-产品管理
+      summary: 删除产品图片
+      description: 删除指定产品图片（仅管理员）
+      operationId: deleteProductImage
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: image_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ==================== 管理端-分类管理接口 ====================
+  /api/manage/categories:
+    get:
+      tags:
+        - 管理端-分类管理
+      summary: 获取分类列表
+      description: 获取所有分类列表（仅管理员）
+      operationId: getManageCategories
+      security:
+        - SessionAuth: []
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CategoryTree'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags:
+        - 管理端-分类管理
+      summary: 创建分类
+      description: 创建新分类（仅管理员）
+      operationId: createCategory
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          category_id:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/categories/{id}:
+    get:
+      tags:
+        - 管理端-分类管理
+      summary: 获取分类详情
+      description: 获取分类详细信息（仅管理员）
+      operationId: getCategoryDetail
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    put:
+      tags:
+        - 管理端-分类管理
+      summary: 更新分类
+      description: 更新分类信息（仅管理员）
+      operationId: updateCategory
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    delete:
+      tags:
+        - 管理端-分类管理
+      summary: 删除分类
+      description: 删除分类（仅管理员）
+      operationId: deleteCategory
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ==================== 管理端-积分管理接口 ====================
+  /api/manage/points/grant:
+    post:
+      tags:
+        - 管理端-积分管理
+      summary: 单个发放积分
+      description: 给单个用户发放积分（仅管理员）
+      operationId: grantPoints
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - amount
+              properties:
+                user_id:
+                  type: integer
+                  description: 用户ID
+                amount:
+                  type: integer
+                  description: 积分数量
+                  minimum: 1
+                description:
+                  type: string
+                  description: 发放说明
+                  maxLength: 500
+      responses:
+        '200':
+          description: 发放成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/points/grant-batch:
+    post:
+      tags:
+        - 管理端-积分管理
+      summary: 批量发放积分
+      description: 给所有员工批量发放相同数量的积分（仅管理员）
+      operationId: grantPointsBatch
+      security:
+        - SessionAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - amount
+              properties:
+                amount:
+                  type: integer
+                  description: 积分数量
+                  minimum: 1
+                description:
+                  type: string
+                  description: 发放说明
+                  maxLength: 500
+      responses:
+        '200':
+          description: 发放成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          affected_users:
+                            type: integer
+                            description: 受影响的用户数量
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ==================== 管理端-操作日志接口 ====================
+  /api/manage/logs:
+    get:
+      tags:
+        - 管理端-操作日志
+      summary: 获取操作日志列表
+      description: 获取管理员操作日志列表（仅管理员）
+      operationId: getLogs
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: admin_id
+          in: query
+          description: 管理员ID筛选
+          schema:
+            type: integer
+        - name: operation_type
+          in: query
+          description: 操作类型筛选
+          schema:
+            type: string
+            enum: [LOGIN, LOGOUT, CREATE, UPDATE, DELETE, GRANT_POINTS, RESET_PASSWORD]
+        - name: operation_module
+          in: query
+          description: 操作模块筛选
+          schema:
+            type: string
+            enum: [USER, PRODUCT, CATEGORY, POINTS]
+        - name: start_date
+          in: query
+          description: 开始日期
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: 结束日期
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedLogs'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /api/manage/logs/{id}:
+    get:
+      tags:
+        - 管理端-操作日志
+      summary: 获取日志详情
+      description: 获取操作日志详细信息（仅管理员）
+      operationId: getLogDetail
+      security:
+        - SessionAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 获取成功
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AdminLog'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+
+components:
+  securitySchemes:
+    SessionAuth:
+      type: apiKey
+      in: header
+      name: X-Session-ID
+      description: Session ID 从登录接口获取
+
+  schemas:
+    # ==================== 通用响应 ====================
+    ApiResponse:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          description: 响应码
+          example: 200
+        message:
+          type: string
+          description: 响应消息
+          example: "success"
+        data:
+          description: 响应数据
+          nullable: true
+
+    # ==================== 用户相关 ====================
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: 用户ID
+        username:
+          type: string
+          description: 用户名
+        real_name:
+          type: string
+          description: 真实姓名
+        employee_id:
+          type: string
+          description: 工号
+        department:
+          type: string
+          description: 部门
+        position:
+          type: string
+          description: 职位
+          nullable: true
+        role:
+          type: string
+          enum: [employee, admin]
+          description: 角色
+        points:
+          type: integer
+          description: 积分余额
+        is_active:
+          type: boolean
+          description: 账户状态
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+        last_login_at:
+          type: string
+          format: date-time
+          description: 最后登录时间
+          nullable: true
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - password
+        - real_name
+        - employee_id
+        - department
+        - role
+      properties:
+        username:
+          type: string
+          maxLength: 50
+        password:
+          type: string
+          format: password
+          minLength: 6
+          maxLength: 8
+        real_name:
+          type: string
+          maxLength: 100
+        employee_id:
+          type: string
+          maxLength: 50
+        department:
+          type: string
+          maxLength: 100
+        position:
+          type: string
+          maxLength: 100
+          nullable: true
+        role:
+          type: string
+          enum: [employee, admin]
+          default: employee
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        real_name:
+          type: string
+          maxLength: 100
+        employee_id:
+          type: string
+          maxLength: 50
+        department:
+          type: string
+          maxLength: 100
+        position:
+          type: string
+          maxLength: 100
+        is_active:
+          type: boolean
+
+    PaginatedUsers:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+
+    # ==================== 产品相关 ====================
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+          nullable: true
+        points_required:
+          type: integer
+        status:
+          type: string
+          enum: [active, inactive]
+        thumbnail_url:
+          type: string
+          description: 缩略图URL
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/Product'
+        - type: object
+          properties:
+            images:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProductImage'
+            categories:
+              type: array
+              items:
+                $ref: '#/components/schemas/Category'
+
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        product_id:
+          type: integer
+        original_filename:
+          type: string
+        image_url:
+          type: string
+          description: 原图URL
+        thumbnail_url:
+          type: string
+          description: 缩略图URL
+        sort_order:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    CreateProductRequest:
+      type: object
+      required:
+        - name
+        - points_required
+        - status
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+          nullable: true
+        points_required:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [active, inactive]
+          default: inactive
+        category_ids:
+          type: array
+          items:
+            type: integer
+          description: 分类ID列表
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        points_required:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [active, inactive]
+        category_ids:
+          type: array
+          items:
+            type: integer
+
+    PaginatedProducts:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+
+    # ==================== 分类相关 ====================
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        parent_id:
+          type: integer
+          nullable: true
+        sort_order:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CategoryTree:
+      allOf:
+        - $ref: '#/components/schemas/Category'
+        - type: object
+          properties:
+            children:
+              type: array
+              items:
+                $ref: '#/components/schemas/Category'
+
+    CreateCategoryRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        parent_id:
+          type: integer
+          nullable: true
+          description: 父分类ID，null表示一级分类
+        sort_order:
+          type: integer
+          default: 0
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        parent_id:
+          type: integer
+          nullable: true
+        sort_order:
+          type: integer
+
+    # ==================== 购物车相关 ====================
+    CartItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        product_id:
+          type: integer
+        product_name:
+          type: string
+        product_thumbnail:
+          type: string
+          nullable: true
+        points_per_item:
+          type: integer
+        quantity:
+          type: integer
+        subtotal_points:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ==================== 订单相关 ====================
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+        order_no:
+          type: string
+        user_id:
+          type: integer
+        total_points:
+          type: integer
+        status:
+          type: string
+          enum: [completed]
+        shipping_address:
+          type: string
+        shipping_phone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    OrderDetail:
+      allOf:
+        - $ref: '#/components/schemas/Order'
+        - type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderItem'
+
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        order_id:
+          type: integer
+        product_id:
+          type: integer
+        product_name:
+          type: string
+        quantity:
+          type: integer
+        points_per_item:
+          type: integer
+        subtotal_points:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedOrders:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+
+    # ==================== 积分相关 ====================
+    PointTransaction:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        transaction_type:
+          type: string
+          enum: [grant, consume]
+        amount:
+          type: integer
+        balance_after:
+          type: integer
+        order_id:
+          type: integer
+          nullable: true
+        admin_id:
+          type: integer
+          nullable: true
+        admin_name:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedTransactions:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PointTransaction'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+
+    # ==================== 地址相关 ====================
+    Address:
+      type: object
+      properties:
+        id:
+          type: integer
+        user_id:
+          type: integer
+        address:
+          type: string
+        phone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    # ==================== 操作日志相关 ====================
+    AdminLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        admin_id:
+          type: integer
+        admin_name:
+          type: string
+        operation_type:
+          type: string
+          enum: [LOGIN, LOGOUT, CREATE, UPDATE, DELETE, GRANT_POINTS, RESET_PASSWORD]
+        operation_module:
+          type: string
+          enum: [USER, PRODUCT, CATEGORY, POINTS]
+        operation_desc:
+          type: string
+        data_before:
+          type: object
+          nullable: true
+          description: 操作前数据快照（JSON）
+        data_after:
+          type: object
+          nullable: true
+          description: 操作后数据快照（JSON）
+        ip_address:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+
+    PaginatedLogs:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminLog'
+        total:
+          type: integer
+        page:
+          type: integer
+        page_size:
+          type: integer
+        total_pages:
+          type: integer
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 400
+                  message:
+                    example: "请求参数错误"
+
+    Unauthorized:
+      description: 未认证
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 401
+                  message:
+                    example: "未认证或会话已过期"
+
+    Forbidden:
+      description: 无权限
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 403
+                  message:
+                    example: "无权限访问"
+
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 404
+                  message:
+                    example: "资源不存在"
+
+    TooManyRequests:
+      description: 请求过于频繁
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ApiResponse'
+              - type: object
+                properties:
+                  code:
+                    example: 429
+                  message:
+                    example: "请求过于频繁，请稍后再试"
