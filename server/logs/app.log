@@ -1,0 +1,41 @@
+2025-11-19 18:12:17,704 - main - INFO - Request: GET /health
+2025-11-19 18:12:17,705 - main - INFO - Response: 200 - 0.001s
+2025-11-19 18:12:40,737 - main - INFO - Request: GET /
+2025-11-19 18:12:40,739 - main - INFO - Response: 200 - 0.002s
+2025-11-19 18:12:50,254 - main - INFO - Request: POST /api/auth/login
+2025-11-19 18:12:50,456 - main - INFO - Response: 200 - 0.201s
+2025-11-19 18:13:00,816 - main - INFO - Request: GET /api/personal/products
+2025-11-19 18:13:00,829 - main - INFO - Response: 200 - 0.013s
+2025-11-19 18:13:10,095 - main - INFO - Request: GET /api/manage/categories/tree
+2025-11-19 18:13:10,099 - main - INFO - Response: 200 - 0.004s
+2025-11-19 18:13:26,016 - main - INFO - Request: POST /api/auth/login
+2025-11-19 18:13:26,209 - main - INFO - Response: 200 - 0.193s
+2025-11-19 18:13:46,297 - main - INFO - Request: POST /api/personal/cart/add
+2025-11-19 18:13:46,307 - main - INFO - Response: 200 - 0.010s
+2025-11-19 18:14:01,738 - main - INFO - Request: GET /api/personal/cart
+2025-11-19 18:14:01,747 - main - INFO - Response: 200 - 0.010s
+2025-11-19 18:14:53,176 - main - INFO - Request: GET /api/personal/points/balance
+2025-11-19 18:14:53,191 - main - INFO - Response: 200 - 0.015s
+2025-11-19 18:15:03,436 - main - INFO - Request: DELETE /api/personal/cart/clear
+2025-11-19 18:15:03,443 - main - INFO - Response: 200 - 0.006s
+2025-11-19 18:15:23,430 - main - INFO - Request: POST /api/personal/cart/add
+2025-11-19 18:15:23,438 - main - INFO - Response: 200 - 0.008s
+2025-11-19 18:15:42,503 - main - INFO - Request: POST /api/personal/orders/create
+2025-11-19 18:15:42,515 - main - WARNING - Business exception: 积分不足，当前积分：1000，需要：13999
+2025-11-19 18:15:42,515 - main - INFO - Response: 400 - 0.013s
+2025-11-19 18:15:54,241 - main - INFO - Request: DELETE /api/personal/cart/clear
+2025-11-19 18:15:54,245 - main - INFO - Response: 200 - 0.005s
+2025-11-19 18:15:54,262 - main - INFO - Request: POST /api/personal/cart/add
+2025-11-19 18:15:54,269 - main - INFO - Response: 200 - 0.007s
+2025-11-19 18:16:03,396 - main - INFO - Request: POST /api/personal/orders/create
+2025-11-19 18:16:03,406 - main - INFO - Response: 200 - 0.010s
+2025-11-19 18:16:18,818 - main - INFO - Request: GET /api/personal/orders/1
+2025-11-19 18:16:18,824 - main - INFO - Response: 200 - 0.006s
+2025-11-19 18:16:34,139 - main - INFO - Request: GET /api/personal/points/transactions
+2025-11-19 18:16:34,144 - main - INFO - Response: 200 - 0.006s
+2025-11-19 18:16:50,149 - main - INFO - Request: POST /api/manage/points/grant
+2025-11-19 18:16:50,162 - main - INFO - Response: 200 - 0.013s
+2025-11-19 18:17:08,902 - main - INFO - Request: GET /api/personal/points/balance
+2025-11-19 18:17:08,908 - main - INFO - Response: 200 - 0.005s
+2025-11-19 18:17:22,036 - main - INFO - Request: GET /api/manage/logs
+2025-11-19 18:17:22,043 - main - INFO - Response: 200 - 0.007s
