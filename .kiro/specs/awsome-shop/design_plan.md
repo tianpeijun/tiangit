@@ -365,6 +365,23 @@
   
   - [Question] 如果需要，默认管理员的用户名和密码是什么？
   - [Answer] admin/admin123456
+  
+  - [Question - Updated] 初始化数据的具体要求是什么？
+  - [Answer] 需要初始化以下数据：
+    - 1个管理员账户（admin/admin123456）
+    - 20个员工账户（需要生成测试数据，包含用户名、密码、姓名、工号、部门等完整信息）
+    - 100个3C电子产品（需要生成测试数据，包括产品名称、描述、积分、分类、图片等）
+    - 产品分类（需要覆盖3C电子产品的常见分类，包括一级和二级分类）
+    - 用户登录需要前后端账号信息对应，确保可以正常登录
+  
+  - [Question] 员工账户的具体信息格式是什么？
+  - [Answer] 员工ID、姓名、部门、职位
+  
+  - [Question] 100个3C电子产品需要包含哪些具体类别？
+  - [Answer] 智能手机和配件：智能手机、充电器、耳机、手机壳等
+  
+  - [Question] 产品图片如何生成和存储？
+  - [Answer] 直接通过占位图生成默认
 
 ---
 
@@ -412,29 +429,29 @@
   - [Answer] 用户ID、产品ID、数量、添加时间等
   
   - [Question] 用户是否可以将同一产品多次添加到购物车？还是自动合并数量？
-  - [Answer] 
+  - [Answer] 直接自动合并数量就行
 
 - [ ] 20.2 订单表补充
   - [Question] 如果购物车一次兑换多个产品，订单表是否需要订单明细表（order_items）来记录每个产品？
-  - [Answer] 
+  - [Answer] 需要明细表order_items
   
   - [Question] 订单表是否需要记录总消耗积分？
-  - [Answer] 
+  - [Answer] 需要记录总消耗积分
 
 ### 21. Session 表设计
 - [ ] 21.1 Session 存储
   - [Question] Session 存储在数据库中，需要创建 sessions 表。该表需要哪些字段？（如：session_id、user_id、data、created_at、expires_at等）
-  - [Answer] 
+  - [Answer] session_id、user_id、data、created_at、expires_at
   
   - [Question] 是否需要定期清理过期的 Session 记录？
-  - [Answer] 
+  - [Answer] 需要
 
 ### 22. 操作日志补充
 - [ ] 22.1 删除操作日志
   - [Question - Updated] 您在 13.3 节回答"不需要"记录删除操作的数据快照。请确认：
     - 删除操作是否完全不记录日志？
     - 还是记录日志但不记录数据快照？
-  - [Answer] 
+  - [Answer] 记录日志但不记录数据快照
   
 ### 23. CSRF 实现确认
 - [ ] 23.1 CSRF 选择
@@ -442,7 +459,7 @@
     - 选项 A：使用 FastAPI 内置的 CSRF 保护
     - 选项 B：自定义实现 CSRF 保护
     - 选项 C：不实现 CSRF 保护（因为前后端不分离，风险较低）
-  - [Answer] 
+  - [Answer] 使用 FastAPI 内置的 CSRF 保护
 
 ### 24. 前端构建输出位置确认
 - [ ] 24.1 静态文件位置
@@ -450,7 +467,7 @@
     - 选项 A：构建输出到 front/dist/，然后复制到 server/static/
     - 选项 B：直接构建输出到 server/static/
     - 选项 C：构建输出到 front/static/，FastAPI 配置访问 ../front/static/
-  - [Answer] 
+  - [Answer] 选项 C：构建输出到 front/static/，FastAPI 配置访问 ../front/static/
 
 ## 当前状态
 等待您回答再次澄清的问题。这些问题对于技术选型和架构设计至关重要。
