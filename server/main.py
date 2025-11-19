@@ -108,6 +108,7 @@ async def general_exception_handler(request: Request, exc: Exception):
 app.include_router(auth_controller.router, prefix="/api/auth", tags=["认证"])
 app.include_router(user_controller.router, prefix="/api/manage/users", tags=["用户管理"])
 app.include_router(category_controller.router, prefix="/api/manage/categories", tags=["分类管理"])
+app.include_router(category_controller.employee_router, prefix="/api/personal/categories", tags=["分类（员工端）"])
 app.include_router(product_controller.router, tags=["产品管理"])
 app.include_router(cart_controller.router, prefix="/api/personal/cart", tags=["购物车"])
 app.include_router(order_controller.router, tags=["订单管理"])
@@ -116,9 +117,9 @@ app.include_router(admin_log_controller.router, prefix="/api/manage/logs", tags=
 app.include_router(personal_controller.router, tags=["个人中心"])
 
 # 挂载静态文件
-static_dir = Path("static")
+static_dir = Path(__file__).parent.parent / "static"
 if static_dir.exists():
-    app.mount("/static", StaticFiles(directory="static"), name="static")
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
 
 # 健康检查
 @app.get("/health")
