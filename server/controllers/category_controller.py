@@ -8,10 +8,11 @@ from typing import Optional
 from models.database import engine
 from services.category_service import CategoryService
 from services.admin_log_service import AdminLogService
-from middleware.auth_middleware import require_admin, get_current_user
+from middleware.auth_middleware import require_admin, require_employee, get_current_user
 from utils.response import success_response
 
 router = APIRouter()
+employee_router = APIRouter()
 
 
 class CreateCategoryRequest(BaseModel):
@@ -26,9 +27,10 @@ class UpdateCategoryRequest(BaseModel):
     sort_order: Optional[int] = None
 
 
+# 管理端接口
 @router.get("")
-async def list_categories(user_info: dict = Depends(get_current_user)):
-    """获取所有分类"""
+async def list_categories(admin_info: dict = Depends(require_admin)):
+    """获取所有分类（管理端）"""
     async with engine.begin() as conn:
         categories = await CategoryService.list_categories(conn)
     
@@ -36,8 +38,8 @@ async def list_categories(user_info: dict = Depends(get_current_user)):
 
 
 @router.get("/tree")
-async def get_category_tree(user_info: dict = Depends(get_current_user)):
-    """获取分类树"""
+async def get_category_tree(admin_info: dict = Depends(require_admin)):
+    """获取分类树（管理端）"""
     async with engine.begin() as conn:
         tree = await CategoryService.get_category_tree(conn)
     
@@ -130,3 +132,22 @@ async def delete_category(
         )
     
     return success_response(message="分类删除成功")
+
+
+# 员工端路由
+@employee_router.get("")
+async def list_categories_for_employee(user_info: dict = Depends(require_employee)):
+    """获取所有分类（员工端）"""
+    async with engine.begin() as conn:
+        categories = await CategoryService.list_categories(conn)
+    
+    return success_response(categories)
+
+
+@employee_router.get("/tree")
+async def get_category_tree_for_employee(user_info: dict = Depends(require_employee)):
+    """获取分类树（员工端）"""
+    async with engine.begin() as conn:
+        tree = await CategoryService.get_category_tree(conn)
+    
+    return success_response(tree)
