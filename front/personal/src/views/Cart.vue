@@ -128,6 +128,7 @@ export default {
     this.loadCart()
   },
   methods: {
+    getImageUrl,
     async loadCart() {
       this.loading = true
       try {
@@ -197,14 +198,20 @@ export default {
         
         this.submitting = true
         try {
-          const order = await this.$store.dispatch('order/createOrder', this.checkoutForm)
+          // 转换字段名以匹配后端 API
+          const orderData = {
+            address: this.checkoutForm.shipping_address,
+            phone: this.checkoutForm.shipping_phone
+          }
+          const order = await this.$store.dispatch('order/createOrder', orderData)
           this.$message.success('兑换成功')
           this.checkoutDialogVisible = false
           await this.$store.dispatch('user/getCurrentUser')
           await this.$store.dispatch('cart/getCart')
-          this.$router.push(`/orders/${order.id}`)
+          this.$router.push(`/orders/${order.order_id}`)
         } catch (error) {
           console.error('Failed to create order:', error)
+          this.$message.error('兑换失败，请重试')
         } finally {
           this.submitting = false
         }
