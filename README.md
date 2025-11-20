@@ -1,12 +1,12 @@
 # Awsome Shop - 电商系统
 
-一个基于 Vue.js + FastAPI + SQLlite的全栈电商系统，部署在 AWS 上。
+一个基于 Vue.js + FastAPI + SQLite的全栈电商系统，部署在 AWS 上。
 
 ## 系统架构
 
 - **前端**: Vue.js (管理端 + 员工端)
 - **后端**: FastAPI (Python)
-- **数据库**: SQLlite
+- **数据库**: SQLite
 - **基础设施**: AWS CDK
 - **部署**: EC2 (后端) + S3/CloudFront (前端)
 
