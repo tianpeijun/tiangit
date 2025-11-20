@@ -52,3 +52,5 @@ Thumbs.db
 
 .venv
 .DS_Store
+
+__pycache__/
