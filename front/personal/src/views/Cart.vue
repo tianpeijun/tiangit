@@ -10,7 +10,7 @@
           <el-table-column label="产品" min-width="300">
             <template slot-scope="scope">
               <div class="product-info">
-                <img :src="scope.row.product_thumbnail || '/static/placeholder.png'" class="product-thumbnail">
+                <img :src="getImageUrl(scope.row.product_thumbnail)" class="product-thumbnail">
                 <span>{{ scope.row.product_name }}</span>
               </div>
             </template>
@@ -91,6 +91,7 @@
 
 <script>
 import { getAddress } from '@/api/profile'
+import { getImageUrl } from '@/utils/image'
 
 export default {
   name: 'Cart',

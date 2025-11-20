@@ -2,21 +2,21 @@ import request from '../utils/request'
 
 export function getCategories() {
   return request({
-    url: '/manage/categories',
+    url: '/api/manage/categories',
     method: 'get'
   })
 }
 
 export function getCategoryDetail(id) {
   return request({
-    url: `/manage/categories/${id}`,
+    url: `/api/manage/categories/${id}`,
     method: 'get'
   })
 }
 
 export function createCategory(data) {
   return request({
-    url: '/manage/categories',
+    url: '/api/manage/categories',
     method: 'post',
     data
   })
@@ -24,7 +24,7 @@ export function createCategory(data) {
 
 export function updateCategory(id, data) {
   return request({
-    url: `/manage/categories/${id}`,
+    url: `/api/manage/categories/${id}`,
     method: 'put',
     data
   })
@@ -32,7 +32,7 @@ export function updateCategory(id, data) {
 
 export function deleteCategory(id) {
   return request({
-    url: `/manage/categories/${id}`,
+    url: `/api/manage/categories/${id}`,
     method: 'delete'
   })
 }

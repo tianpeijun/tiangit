@@ -1,7 +1,7 @@
 <template>
   <el-card class="product-card" :body-style="{ padding: '0px' }" shadow="hover" @click.native="$emit('click')">
     <div class="product-image">
-      <img :src="product.thumbnail_url || '/static/placeholder.png'" :alt="product.name">
+      <img :src="getImageUrl(product.thumbnail_url)" :alt="product.name">
     </div>
     <div class="product-info">
       <h4 class="product-name">{{ product.name }}</h4>
@@ -15,6 +15,8 @@
 </template>
 
 <script>
+import { getImageUrl } from '@/utils/image'
+
 export default {
   name: 'ProductCard',
   props: {
@@ -24,6 +26,7 @@ export default {
     }
   },
   methods: {
+    getImageUrl,
     async handleAddToCart() {
       try {
         await this.$store.dispatch('cart/addToCart', {

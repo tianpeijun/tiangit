@@ -2,7 +2,7 @@ import request from '../utils/request'
 
 export function getProducts(params) {
   return request({
-    url: '/manage/products',
+    url: '/api/manage/products',
     method: 'get',
     params
   })
@@ -10,14 +10,14 @@ export function getProducts(params) {
 
 export function getProductDetail(id) {
   return request({
-    url: `/manage/products/${id}`,
+    url: `/api/manage/products/${id}`,
     method: 'get'
   })
 }
 
 export function createProduct(data) {
   return request({
-    url: '/manage/products',
+    url: '/api/manage/products',
     method: 'post',
     data
   })
@@ -25,7 +25,7 @@ export function createProduct(data) {
 
 export function updateProduct(id, data) {
   return request({
-    url: `/manage/products/${id}`,
+    url: `/api/manage/products/${id}`,
     method: 'put',
     data
   })
@@ -33,14 +33,14 @@ export function updateProduct(id, data) {
 
 export function deleteProduct(id) {
   return request({
-    url: `/manage/products/${id}`,
+    url: `/api/manage/products/${id}`,
     method: 'delete'
   })
 }
 
 export function toggleProductStatus(id, status) {
   return request({
-    url: `/manage/products/${id}/status`,
+    url: `/api/manage/products/${id}/status`,
     method: 'put',
     params: { status }
   })
@@ -48,7 +48,7 @@ export function toggleProductStatus(id, status) {
 
 export function uploadProductImages(id, formData) {
   return request({
-    url: `/manage/products/${id}/images`,
+    url: `/api/manage/products/${id}/images`,
     method: 'post',
     data: formData,
     headers: {
@@ -59,7 +59,7 @@ export function uploadProductImages(id, formData) {
 
 export function deleteProductImage(imageId) {
   return request({
-    url: `/manage/products/images/${imageId}`,
+    url: `/api/manage/products/images/${imageId}`,
     method: 'delete'
   })
 }

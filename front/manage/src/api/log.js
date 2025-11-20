@@ -2,7 +2,7 @@ import request from '../utils/request'
 
 export function getLogs(params) {
   return request({
-    url: '/manage/logs',
+    url: '/api/manage/logs',
     method: 'get',
     params
   })
@@ -10,7 +10,7 @@ export function getLogs(params) {
 
 export function getLogDetail(id) {
   return request({
-    url: `/manage/logs/${id}`,
+    url: `/api/manage/logs/${id}`,
     method: 'get'
   })
 }

@@ -1410,7 +1410,7 @@ async def log_requests(request: Request, call_next):
 | 字段 | 值 |
 |------|-----|
 | 用户名 | admin |
-| 密码 | admin123456 |
+| 密码 | admin123 |
 | 真实姓名 | 系统管理员 |
 | 工号 | ADMIN001 |
 | 部门 | 技术部 |
@@ -1422,7 +1422,7 @@ async def log_requests(request: Request, call_next):
 
 | 用户名格式 | 密码 | 姓名格式 | 工号格式 | 部门 | 职位 | 初始积分 |
 |-----------|------|---------|---------|------|------|---------|
-| employee001-employee020 | test123456 | 测试员工01-20 | EMP0001-EMP0020 | 轮流分配到5个部门 | 员工 | 1000 |
+| employee001-employee020 | test123 | 测试员工01-20 | EMP0001-EMP0020 | 轮流分配到5个部门 | 员工 | 1000 |
 
 **部门列表**：技术部、市场部、销售部、人力资源部、财务部
 

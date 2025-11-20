@@ -51,3 +51,19 @@ Thumbs.db
 .env.local
 
 .venv
+
+# Temporary files
+*.tmp
+*.bak
+*_BACKUP_*
+*_BASE_*
+*_LOCAL_*
+*_REMOTE_*
+
+# Build outputs
+front/static/
+node_modules/
+
+# AWS
+cdk.out/
+cdk.context.json

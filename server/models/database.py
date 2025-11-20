@@ -8,11 +8,13 @@ from sqlalchemy import (
 from sqlalchemy.ext.asyncio import create_async_engine
 from datetime import datetime
 import os
+from pathlib import Path
 
 # 数据库连接配置
+BASE_DIR = Path(__file__).resolve().parent.parent.parent  # 项目根目录
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "sqlite+aiosqlite:///data/awsome_shop.db"
+    f"sqlite+aiosqlite:///{BASE_DIR}/data/awsome_shop.db"
 )
 
 # 创建异步引擎

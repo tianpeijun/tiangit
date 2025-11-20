@@ -5,7 +5,7 @@
         <el-col :span="12">
           <el-carousel v-if="product.images && product.images.length > 0" height="400px">
             <el-carousel-item v-for="image in product.images" :key="image.id">
-              <img :src="image.image_url" :alt="product.name" class="carousel-image">
+              <img :src="getImageUrl(image.image_url)" :alt="product.name" class="carousel-image">
             </el-carousel-item>
           </el-carousel>
           <div v-else class="placeholder-image">
@@ -46,6 +46,8 @@
 </template>
 
 <script>
+import { getImageUrl } from '@/utils/image'
+
 export default {
   name: 'ProductDetail',
   data() {
@@ -63,6 +65,7 @@ export default {
     this.loadProduct()
   },
   methods: {
+    getImageUrl,
     async loadProduct() {
       this.loading = true
       try {

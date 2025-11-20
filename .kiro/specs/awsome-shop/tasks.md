@@ -36,7 +36,7 @@
   - **负责人：数据库工程师**
   - **交付物：database.py, init_db.py, 数据库 schema 文档**
 
-- [x] 2. API 规范：定义接口契约
+- [ ] 2. API 规范：定义接口契约
   - 根据数据库 schema 定义所有 API 接口（60+ 个接口）
   - 定义请求/响应格式（JSON Schema）
   - 定义认证方式（Session-based）
@@ -124,7 +124,7 @@
 
 ### Phase 3: 前端开发（完整前端实现）
 
-- [ ] 4. 前端：完整前端应用实现
+- [x] 4. 前端：完整前端应用实现
   - **项目基础设施**
     - 使用 Vue CLI 创建 front/personal/ 和 front/manage/ 项目
     - 安装依赖（Element UI, Vuex 3, Vue Router, Axios）
@@ -207,7 +207,7 @@
 
 ### Phase 4: 集成测试
 
-- [ ] 5. 集成测试：前后端联调和功能验证
+- [x] 5. 集成测试：前后端联调和功能验证
   - **环境准备**
     - 执行数据库初始化脚本
     - 启动后端服务
@@ -242,43 +242,105 @@
 
 ### Phase 5: CDK 部署
 
-- [ ] 6. CDK：基础设施即代码
+- [x] 6. CDK：基础设施即代码
   - **CDK 项目初始化**
     - 创建 cdk/ 目录
-    - 初始化 CDK 项目（TypeScript）
-    - 配置 CDK 依赖
+    - 初始化 CDK 项目（TypeScript）：`cdk init app --language typescript`
+    - 配置 CDK 依赖（@aws-cdk/aws-ec2, @aws-cdk/aws-elasticloadbalancingv2, @aws-cdk/aws-s3, @aws-cdk/aws-cloudfront 等）
+    - 配置部署 region 为 us-east-1
+    - 配置使用本地 AWS CLI 凭证（~/.aws/credentials 中的 global profile）
   - **VPC 和网络**
-    - 定义 VPC（公有子网、私有子网）
-    - 配置安全组（HTTP/HTTPS、SSH）
-    - 配置 NAT Gateway（可选）
-  - **EC2 实例**
-    - 定义 EC2 实例（t3.small）
-    - 配置 Ubuntu 22.04 LTS AMI
-    - 配置 User Data 脚本（安装依赖、部署应用）
-    - 配置 IAM Role 和 Instance Profile
-  - **EBS 卷**
-    - 创建 EBS 卷（20GB，gp3）
-    - 配置自动挂载到 /mnt/data
-    - 配置数据库和图片存储路径
-  - **应用部署**
-    - 配置 systemd 服务文件
-    - 配置 Nginx 反向代理（可选）
-    - 配置 SSL 证书（可选）
+    - 定义 VPC（2 个公有子网，跨 2 个可用区）
+    - 配置安全组：
+      - ALB 安全组：允许入站 HTTP (8080)
+      - EC2 安全组：允许来自 ALB 的流量（8000 端口）和 SSH (22)
+    - 配置 Internet Gateway
+  - **S3 存储桶（前端静态资源）**
+    - 创建 S3 存储桶用于员工端静态文件（awsome-shop-personal-{account-id}）
+    - 创建 S3 存储桶用于管理端静态文件（awsome-shop-manage-{account-id}）
+    - 配置存储桶策略允许 CloudFront 访问
+    - 配置存储桶为静态网站托管模式
+  - **CloudFront 分发（前端）**
+    - 创建 CloudFront 分发 1：员工端
+      - Origin：S3 存储桶（awsome-shop-personal）
+      - 默认根对象：index.html
+      - 错误页面配置：404/403 重定向到 /index.html（支持 SPA 路由）
+      - 缓存策略：CachingOptimized
+    - 创建 CloudFront 分发 2：管理端
+      - Origin：S3 存储桶（awsome-shop-manage）
+      - 默认根对象：index.html
+      - 错误页面配置：404/403 重定向到 /index.html（支持 SPA 路由）
+      - 缓存策略：CachingOptimized
+    - 输出 CloudFront 域名（用于访问前端应用）
+  - **EC2 实例（后端 API）**
+    - 定义 EC2 实例（t3.small，Amazon Linux 2023）
+    - 配置 IAM Role 和 Instance Profile（CloudWatch 日志权限）
+    - 配置 User Data 脚本：
+      - 安装 Python 3.10+、pip、git
+      - 克隆或上传后端代码到 /opt/awsome-shop/server
+      - 安装 Python 依赖：`pip install -r requirements.txt`
+      - 创建数据目录：/opt/awsome-shop/data（存储 SQLite 数据库）
+      - 创建静态文件目录：/opt/awsome-shop/static（存储产品图片）
+      - 初始化数据库：`python3 init_db.py`
+      - 配置 systemd 服务文件（/etc/systemd/system/awsome-shop.service）
+      - 启动后端服务：`systemctl start awsome-shop`
+    - 配置 EBS 卷（20GB，gp3）挂载到 /opt/awsome-shop/data
+  - **Application Load Balancer（后端 API）**
+    - 创建 ALB（面向互联网）
+    - 配置监听器：HTTP (8080)
+    - 配置目标组：
+      - 目标：EC2 实例
+      - 协议：HTTP
+      - 端口：8000
+      - 健康检查路径：/health
+      - 健康检查间隔：30 秒
+    - 配置路由规则：所有流量转发到 EC2 实例
+    - 输出 ALB DNS 名称（用于前端调用 API，格式：http://{ALB_DNS}:8080）
+  - **前端环境变量配置**
+    - 修改前端构建脚本，支持环境变量注入
+    - 创建 .env.production 文件：
+      - 员工端：VUE_APP_API_BASE_URL=http://{ALB_DNS_NAME}:8080
+      - 管理端：VUE_APP_API_BASE_URL=http://{ALB_DNS_NAME}:8080
+    - 修改前端代码中的 axios baseURL 配置：
+      - 从硬编码的 localhost:8000 改为读取环境变量 process.env.VUE_APP_API_BASE_URL
+      - 文件位置：front/personal/src/utils/request.js 和 front/manage/src/utils/request.js
+  - **前端构建和部署**
+    - 构建员工端：`cd front/personal && npm run build`
+    - 构建管理端：`cd front/manage && npm run build`
+    - 将构建产物上传到对应的 S3 存储桶：
+      - 员工端 dist/ → awsome-shop-personal-{account-id}
+      - 管理端 dist/ → awsome-shop-manage-{account-id}
+    - 使 CloudFront 缓存失效：`aws cloudfront create-invalidation`
   - **监控和日志**
-    - 配置 CloudWatch 日志
-    - 配置 CloudWatch 指标
-    - 配置告警（CPU、内存、磁盘）
+    - 配置 CloudWatch 日志组：/aws/ec2/awsome-shop
+    - 配置 EC2 实例日志收集（应用日志、系统日志）
+    - 配置 CloudWatch 指标：CPU、内存、磁盘使用率
+    - 配置告警：
+      - CPU 使用率 > 80%
+      - 磁盘使用率 > 85%
+      - ALB 目标健康检查失败
   - **备份策略**
-    - 配置 EBS 快照策略
-    - 配置数据库备份
-  - **CDK 部署**
-    - 执行 cdk synth 生成 CloudFormation 模板
-    - 执行 cdk deploy 部署到 AWS
-    - 验证部署成功
+    - 配置 EBS 快照策略（每日备份，保留 7 天）
+    - 配置数据库备份脚本（定时备份 SQLite 文件到 S3）
+  - **CDK 部署流程**
+    - 执行 `cdk bootstrap aws://{account-id}/us-east-1`（首次部署）
+    - 执行 `cdk synth` 生成 CloudFormation 模板
+    - 执行 `cdk deploy` 部署到 AWS us-east-1
+    - 验证部署成功：
+      - 检查 EC2 实例状态
+      - 检查 ALB 健康检查状态
+      - 检查 CloudFront 分发状态
+      - 访问 CloudFront 域名验证前端应用
+      - 通过 ALB 域名验证后端 API
+  - **输出信息**
+    - ALB DNS 名称（后端 API 地址）
+    - CloudFront 域名 1（员工端访问地址）
+    - CloudFront 域名 2（管理端访问地址）
+    - EC2 实例 ID 和公网 IP（用于 SSH 访问）
   - _需求: 部署方案_
   - **负责人：DevOps 工程师**
   - **依赖：任务 5**
-  - **交付物：CDK 代码、CloudFormation 模板、部署文档**
+  - **交付物：CDK 代码、CloudFormation 模板、部署文档、前端环境变量配置**
 
 ### Phase 6: 文档和交付
 

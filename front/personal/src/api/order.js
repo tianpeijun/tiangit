@@ -2,7 +2,7 @@ import request from '../utils/request'
 
 export function createOrder(data) {
   return request({
-    url: '/personal/orders/create',
+    url: '/api/personal/orders/create',
     method: 'post',
     data
   })
@@ -10,7 +10,7 @@ export function createOrder(data) {
 
 export function getOrders(params) {
   return request({
-    url: '/personal/orders',
+    url: '/api/personal/orders',
     method: 'get',
     params
   })
@@ -18,7 +18,7 @@ export function getOrders(params) {
 
 export function getOrderDetail(id) {
   return request({
-    url: `/personal/orders/${id}`,
+    url: `/api/personal/orders/${id}`,
     method: 'get'
   })
 }

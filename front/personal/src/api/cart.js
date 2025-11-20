@@ -2,14 +2,14 @@ import request from '../utils/request'
 
 export function getCart() {
   return request({
-    url: '/personal/cart',
+    url: '/api/personal/cart',
     method: 'get'
   })
 }
 
 export function addToCart(data) {
   return request({
-    url: '/personal/cart/add',
+    url: '/api/personal/cart/add',
     method: 'post',
     data
   })
@@ -17,7 +17,7 @@ export function addToCart(data) {
 
 export function updateCartItem(data) {
   return request({
-    url: '/personal/cart/update',
+    url: '/api/personal/cart/update',
     method: 'put',
     data
   })
@@ -25,14 +25,14 @@ export function updateCartItem(data) {
 
 export function removeFromCart(productId) {
   return request({
-    url: `/personal/cart/remove/${productId}`,
+    url: `/api/personal/cart/remove/${productId}`,
     method: 'delete'
   })
 }
 
 export function clearCart() {
   return request({
-    url: '/personal/cart/clear',
+    url: '/api/personal/cart/clear',
     method: 'delete'
   })
 }

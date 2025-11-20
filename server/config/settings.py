@@ -7,11 +7,12 @@ from pathlib import Path
 class Settings:
     # 项目路径
     BASE_DIR = Path(__file__).resolve().parent.parent
+    PROJECT_ROOT = BASE_DIR.parent  # 项目根目录
     
     # 数据库配置
     DATABASE_URL = os.getenv(
         "DATABASE_URL",
-        "sqlite+aiosqlite:///data/awsome_shop.db"
+        f"sqlite+aiosqlite:///{PROJECT_ROOT}/data/awsome_shop.db"
     )
     
     # 文件存储配置
@@ -64,11 +65,6 @@ class Settings:
     DEBUG = os.getenv("DEBUG", "False").lower() == "true"
     
     # CORS 配置
-    CORS_ORIGINS = [
-        "http://localhost:8080",
-        "http://localhost:3000",
-        "http://127.0.0.1:8080",
-        "http://127.0.0.1:3000",
-    ]
+    CORS_ORIGINS = ["*"]  # 允许所有来源（生产环境应该限制）
 
 settings = Settings()

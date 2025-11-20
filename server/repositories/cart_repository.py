@@ -82,6 +82,9 @@ class CartRepository:
     @staticmethod
     async def get_user_cart(conn: AsyncConnection, user_id: int) -> List[dict]:
         """获取用户购物车"""
+        from server.repositories.product_repository import ProductRepository
+        from server.config.settings import settings
+        
         result = await conn.execute(
             select(carts, products)
             .join(products, carts.c.product_id == products.c.id)
@@ -97,12 +100,20 @@ class CartRepository:
         
         items = []
         for row in result:
+            # 获取产品的第一张图片作为缩略图
+            images = await ProductRepository.get_product_images(conn, row.product_id)
+            thumbnail_url = None
+            if images:
+                first_img = images[0]
+                thumbnail_url = f"{settings.STATIC_URL}/{first_img['file_path'].replace('static/images/', '')}/{first_img['thumbnail_filename']}"
+            
             items.append({
                 'cart_id': row.id,
                 'product_id': row.product_id,
                 'quantity': row.quantity,
                 'product_name': row.name,
                 'product_description': row.description,
+                'product_thumbnail': thumbnail_url,
                 'points_required': row.points_required,
                 'subtotal_points': row.quantity * row.points_required
             })

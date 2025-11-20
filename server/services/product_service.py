@@ -107,6 +107,13 @@ class ProductService:
                     'thumbnail_url': f"{settings.STATIC_URL}/{img['file_path'].replace('static/images/', '')}/{img['thumbnail_filename']}",
                     'sort_order': img['sort_order']
                 })
+            
+            # 设置产品的缩略图（使用第一张图片）
+            if images:
+                first_img = images[0]
+                product['thumbnail_url'] = f"{settings.STATIC_URL}/{first_img['file_path'].replace('static/images/', '')}/{first_img['thumbnail_filename']}"
+            else:
+                product['thumbnail_url'] = None
         
         # 获取分类
         category_ids = await ProductRepository.get_product_categories(conn, product_id)
@@ -149,6 +156,13 @@ class ProductService:
                         'thumbnail_url': f"{settings.STATIC_URL}/{img['file_path'].replace('static/images/', '')}/{img['thumbnail_filename']}",
                         'sort_order': img['sort_order']
                     })
+                
+                # 设置产品的缩略图（使用第一张图片）
+                if images:
+                    first_img = images[0]
+                    item['thumbnail_url'] = f"{settings.STATIC_URL}/{first_img['file_path'].replace('static/images/', '')}/{first_img['thumbnail_filename']}"
+                else:
+                    item['thumbnail_url'] = None
             
             # 获取分类
             category_ids_list = await ProductRepository.get_product_categories(conn, item['id'])

@@ -1,6 +1,6 @@
 module.exports = {
   outputDir: '../static/manage',
-  publicPath: '/manage/',
+  publicPath: '/',
   devServer: {
     port: 8081,
     proxy: {

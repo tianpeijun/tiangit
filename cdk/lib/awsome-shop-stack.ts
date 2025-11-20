@@ -138,8 +138,12 @@ export class AwsomeShopStack extends cdk.Stack {
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchAgentServerPolicy'),
+        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
       ],
     });
+
+    // 添加 S3 读取权限（用于部署）
+    manageBucket.grantRead(ec2Role);
 
     // ========================================
     // EC2 实例（后端 API）
