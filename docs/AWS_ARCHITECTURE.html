@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS CDK 系统架构图</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+  <style>
+    /* 核心样式 */
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* APP精确布局 */
+    .app-container {
+      width: 375px; height: 812px;
+      display: flex; flex-direction: column; overflow: hidden;
+      border: 1px solid #e5e7eb; border-radius: 16px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.1);
+      background: white;
+      position: relative;
+    }
+    .fixed-section { flex-shrink: 0; }
+    .content-flex { flex: 1; overflow-y: auto; min-height: 0; }
+    
+    /* 图表容器 */
+    .chart-container {
+      width: 1200px; 
+      height: 800px;
+    }
+    
+    /* 底部说明 */
+    .legend-section {
+      display: flex; gap: 12px; flex-wrap: wrap;
+      padding: 12px; background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
+    .legend-item {
+      display: flex; align-items: center;
+      gap: 6px; font-size: 12px;
+    }
+    .legend-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex justify-center items-center p-8">
+  <div class="app-container">
+    <!-- 标题栏 -->
+    <header class="fixed-section bg-white shadow-sm z-10">
+      <div class="h-14 flex items-center px-4 justify-center border-b">
+        <h1 class="font-bold text-gray-800">AWS CDK 系统架构图</h1>
+      </div>
+    </header>
+    
+    <!-- 内容区 -->
+    <main class="content-flex hide-scrollbar p-4">
+      <div id="architecture-chart" class="chart-container"></div>
+    </main>
+    
+    <!-- 底部栏 -->
+    <footer class="fixed-section">
+      <div class="legend-section">
+        <div class="legend-item">
+          <span class="legend-dot bg-blue-500"></span>
+          <span>前端组件 (S3, CloudFront)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot bg-green-500"></span>
+          <span>后端组件 (EC2, FastAPI)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot bg-gray-400"></span>
+          <span>网络组件 (VPC, IGW, ALB)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot bg-orange-400"></span>
+          <span>存储组件 (S3 存储桶)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot bg-purple-500"></span>
+          <span>监控组件 (CloudWatch)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot bg-teal-400"></span>
+          <span>安全组件 (IAM Role, Security Group)</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+  
+  <script>
+    // 在页面加载完成后初始化ECharts
+    window.onload = function() {
+      const chartDom = document.getElementById('architecture-chart');
+      const myChart = echarts.init(chartDom);
+      
+      const option = {
+        backgroundColor: '#fafafa',
+        tooltip: {
+          formatter: '{b}'
+        },
+        series: [{
+          type: 'graph',
+          layout: 'none',
+          symbolSize: 40,
+          label: {
+            show: true,
+            position: 'bottom',
+            fontSize: 12,
+            fontWeight: 'bold'
+          },
+          edgeLabel: {
+            show: false,
+            position: 'middle',
+            fontSize: 10
+          },
+          edgeSymbol: ['circle', 'arrow'],
+          edgeSymbolSize: [0, 6],
+          roam: false,
+          draggable: false,
+          data: [
+            { 
+              id: 'cf1', name: 'CloudFront\n(Admin)',
+              x: 350, y: 300,
+              symbol: 'rect', symbolSize: [80,60],
+              itemStyle: { color: '#3b82f6' }
+            },
+            { 
+              id: 'cf2', name: 'CloudFront\n(Employee)',
+              x: 350, y: 500,
+              symbol: 'rect', symbolSize: [80,60],
+              itemStyle: { color: '#3b82f6' }
+            },
+            { 
+              id: 's3_1', name: 'S3\n(Admin)',
+              x: 550, y: 300,
+              symbol: 'rect', symbolSize: [80,60],
+              itemStyle: { color: '#f97316' }
+            },
+            { 
+              id: 's3_2', name: 'S3\n(Employee)',
+              x: 550, y: 500,
+              symbol: 'rect', symbolSize: [80,60],
+              itemStyle: { color: '#f97316' }
+            },
+            { 
+              id: 'alb', name: 'Application\nLoad Balancer',
+              x: 750, y: 400,
+              symbol: 'diamond', symbolSize: [100,60],
+              itemStyle: { color: '#9ca3af' },
+              label: { position: 'bottom' }
+            },
+            {
+              id: 'vpc', name: 'VPC Boundary',
+              x: 800, y: 400,
+              symbol: 'roundRect', symbolSize: [600, 400],
+              itemStyle: { 
+                color: 'rgba(156, 163, 175, 0.05)',
+                borderColor: '#4b5563',
+                borderWidth: 2,
+                borderType: 'dashed'
+              },
+              label: {
+                position: 'top',
+                offset: [0, -210]
+              }
+            },
+            {
+              id: 'az1', name: 'AZ 1',
+              x: 680, y: 300,
+              symbol: 'roundRect', symbolSize: [240, 160],
+              itemStyle: { 
+                color: 'rgba(107, 114, 128, 0.05)',
+                borderColor: '#374151',
+                borderWidth: 1
+              }
+            },
+            {
+              id: 'az2', name: 'AZ 2',
+              x: 920, y: 500,
+              symbol: 'roundRect', symbolSize: [240, 160],
+              itemStyle: { 
+                color: 'rgba(107, 114, 128, 0.05)',
+                borderColor: '#374151',
+                borderWidth: 1
+              }
+            },
+            { 
+              id: 'ec2_1', name: 'EC2\nInstance (AZ1)',
+              x: 680, y: 300,
+              symbol: 'circle',
+              itemStyle: { color: '#22c55e' }
+            },
+            { 
+              id: 'ec2_2', name: 'EC2\nInstance (AZ2)',
+              x: 920, y: 500,
+              symbol: 'circle',
+              itemStyle: { color: '#22c55e' }
+            },
+            { 
+              id: 'igw', name: 'Internet\nGateway',
+              x: 150, y: 400,
+              symbol: 'roundRect', symbolSize: [60,60],
+              itemStyle: { color: '#6b7280' }
+            },
+            { 
+              id: 'sg', name: 'Security\nGroup',
+              x: 800, y: 400,
+              symbol: 'rect', symbolSize: [120,60],
+              itemStyle: { color: 'rgba(45, 212, 191, 0.2)', borderColor: '#0d9488', borderWidth: 1 }
+            },
+            { 
+              id: 'cw', name: 'CloudWatch\nLogs',
+              x: 800, y: 100,
+              symbol: 'rect', symbolSize: [100,60],
+              itemStyle: { color: '#a855f7' },
+              label: { position: 'top' }
+            },
+            { 
+              id: 'iam', name: 'IAM Role',
+              x: 1000, y: 650,
+              symbol: 'rect', symbolSize: [140,60],
+              itemStyle: { color: '#0d9488' },
+              label: { position: 'top' }
+            }
+          ],
+          links: [
+            { source: 'igw', target: 'cf1' },
+            { source: 'igw', target: 'cf2' },
+            { source: 'cf1', target: 's3_1' },
+            { source: 'cf2', target: 's3_2' },
+            { source: 's3_1', target: 'alb' },
+            { source: 's3_2', target: 'alb' },
+            { source: 'alb', target: 'ec2_1', lineStyle: { color: '#4b5563', width: 2 } },
+            { source: 'alb', target: 'ec2_2', lineStyle: { color: '#4b5563', width: 2 } },
+            { source: 'ec2_1', target: 'cw', lineStyle: { type: 'dashed', color: '#a855f7', width: 1 } },
+            { source: 'ec2_2', target: 'cw', lineStyle: { type: 'dashed', color: '#a855f7', width: 1 } },
+            { source: 'iam', target: 'ec2_1' },
+            { source: 'iam', target: 'ec2_2' },
+            { source: 'sg', target: 'ec2_1' },
+            { source: 'sg', target: 'ec2_2' }
+          ],
+          lineStyle: {
+            color: '#6b7280',
+            width: 1.5,
+            curveness: 0.1
+          }
+        }]
+      };
+      
+      myChart.setOption(option);
+    }
+  </script>
+</body>
+</html>

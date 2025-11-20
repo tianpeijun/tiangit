@@ -20,11 +20,13 @@
 │   ├── manage/            # 管理端前端
 │   └── personal/          # 员工端前端
 ├── data/                  # 数据库初始化脚本
-├── static/                # 静态资源（图片等）
+├── static/                 # 静态资源（图片等）
 ├── docs/                  # 文档
-│   ├── DATABASE_SCHEMA.md # 数据库 schema
-│   ├── DEPLOYMENT.md      # 部署指南
-│   └── api-spec.yaml      # API 规格 (OpenAPI 3.0)
+│   ├── DATABASE_SCHEMA.md     # 数据库 schema
+│   ├── DEPLOYMENT.md          # 部署指南
+│   ├── AWS_ARCHITECTURE.html  # AWS 架构设计图 (交互式)
+│   ├── AWS_ARCHITECTURE.md    # AWS 架构设计文档
+│   └── api-spec.yaml          # API 规格 (OpenAPI 3.0)
 ├── scripts/               # 部署和测试脚本
 │   ├── deploy-backend-ssm.sh  # 后端部署脚本
 │   ├── deploy-via-s3.sh       # 前端部署脚本
@@ -83,6 +85,7 @@ aws cloudfront create-invalidation --distribution-id <DISTRIBUTION_ID> --paths "
 - **数据库 Schema**: `docs/DATABASE_SCHEMA.md`
 - **API 规格**: `docs/api-spec.yaml` (OpenAPI 3.0)
 - **部署指南**: `docs/DEPLOYMENT.md`
+- **AWS 架构设计**: `docs/AWS_ARCHITECTURE.md` (查看 `docs/AWS_ARCHITECTURE.html` 获取交互式图表)
 
 ## 开发
 
