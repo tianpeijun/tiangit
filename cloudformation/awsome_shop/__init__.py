@@ -1,0 +1,1 @@
+# AWSomeShop CDK Stack Package

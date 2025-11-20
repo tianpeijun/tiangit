@@ -1,0 +1,20 @@
+# Python
+*.pyc
+__pycache__/
+.venv/
+*.egg-info/
+
+# CDK
+cdk.out/
+.cdk.staging/
+cdk.context.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
