@@ -80,11 +80,18 @@ export default {
         
         this.singleSubmitting = true
         try {
-          await grantPoints(this.singleForm)
+          // 转换为后端期望的格式
+          const data = {
+            user_ids: [this.singleForm.user_id],
+            amount: this.singleForm.amount,
+            description: this.singleForm.description
+          }
+          await grantPoints(data)
           this.$message.success('发放成功')
           this.$refs.singleForm.resetFields()
         } catch (error) {
           console.error('Failed to grant points:', error)
+          this.$message.error('发放失败，请重试')
         } finally {
           this.singleSubmitting = false
         }
@@ -103,7 +110,7 @@ export default {
           
           this.batchSubmitting = true
           const result = await grantPointsBatch(this.batchForm)
-          this.$message.success(`发放成功，共 ${result.affected_users} 名员工`)
+          this.$message.success(`发放成功，共 ${result.count} 名员工`)
           this.$refs.batchForm.resetFields()
         } catch (error) {
           if (error !== 'cancel') {
